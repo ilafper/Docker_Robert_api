@@ -12,10 +12,8 @@ async function iniciarServidor() {
 
     try {
        
-        await mongoose.connect(uri, {
-            useNewUrlParser: true,
-            useUnifiedTopology: true,
-        });
+        await mongoose.connect(uri);
+
         console.log("Mongoose conectado a MongoDB local");
 
 
