@@ -9,7 +9,7 @@ const usuarioSchema = new mongoose.Schema({
 });
 
 
-// Esto crea la colección "usuarios" (Mongoose pone el nombre en plural)
+
 const Usuario = mongoose.model("Usuario", usuarioSchema);
 
 export default Usuario;

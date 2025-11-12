@@ -8,17 +8,18 @@ app.use(express.json());
 
 async function iniciarServidor() {
 
-    const uri = process.env.MONGO_URI || "mongodb://localhost:27017/miBaseDeDatos";
+    const uri = "mongodb://localhost:27017/miBaseDeDatos";
 
     try {
-        // Conectar Mongoose
+       
         await mongoose.connect(uri, {
             useNewUrlParser: true,
             useUnifiedTopology: true,
         });
         console.log("Mongoose conectado a MongoDB local");
 
-        // --- Crear datos de ejemplo si no existen ---
+
+        // --- Crear datos--
         const usuariosExistentes = await Usuario.countDocuments();
         if (usuariosExistentes === 0) {
             await Usuario.insertMany([
@@ -37,7 +38,8 @@ async function iniciarServidor() {
             console.log("Grupos de ejemplo creados");
         }
 
-        // --- Endpoints GET ---
+
+        //Endpoint get 
         app.get("/usuarios", async (req, res) => {
             const usuarios = await Usuario.find();
             res.json(usuarios);
@@ -56,5 +58,5 @@ async function iniciarServidor() {
     }
 }
 
-// Ejecutar servidor
+
 iniciarServidor();

@@ -7,8 +7,6 @@ const grupoSchema = new mongoose.Schema({
   versionKey: false
 });
 
-
-// Esto crea la colección "usuarios" (Mongoose pone el nombre en plural)
 const Grupo = mongoose.model("Grupo", grupoSchema);
 
 export default Grupo;
