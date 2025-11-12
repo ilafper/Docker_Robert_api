@@ -7,17 +7,13 @@ const app = express();
 app.use(express.json());
 
 async function iniciarServidor() {
-
-    const uri = "mongodb://localhost:27017/miBaseDeDatos";
+    const uri = process.env.MONGO_URI || "mongodb://localhost:27017/miBaseDeDatos";
 
     try {
-       
         await mongoose.connect(uri);
-
         console.log("Mongoose conectado a MongoDB local");
 
-
-        // --- Crear datos--
+        // --- Crear datos de ejemplo ---
         const usuariosExistentes = await Usuario.countDocuments();
         if (usuariosExistentes === 0) {
             await Usuario.insertMany([
@@ -36,8 +32,7 @@ async function iniciarServidor() {
             console.log("Grupos de ejemplo creados");
         }
 
-
-        //Endpoint get 
+        // --- Endpoints GET ---
         app.get("/usuarios", async (req, res) => {
             const usuarios = await Usuario.find();
             res.json(usuarios);
@@ -48,6 +43,77 @@ async function iniciarServidor() {
             res.json(grupos);
         });
 
+        // --- Endpoints POST (crear) ---
+        app.post("/usuarios", async (req, res) => {
+            try {
+                const nuevoUsuario = new Usuario(req.body);
+                const savedUsuario = await nuevoUsuario.save();
+                res.status(201).json(savedUsuario);
+            } catch (error) {
+                res.status(400).json({ error: error.message });
+            }
+        });
+
+        app.post("/grupos", async (req, res) => {
+            try {
+                const nuevoGrupo = new Grupo(req.body);
+                const savedGrupo = await nuevoGrupo.save();
+                res.status(201).json(savedGrupo);
+            } catch (error) {
+                res.status(400).json({ error: error.message });
+            }
+        });
+
+        // --- Endpoints PUT (editar) ---
+        app.put("/usuarios/:id", async (req, res) => {
+            try {
+                const usuarioActualizado = await Usuario.findByIdAndUpdate(
+                    req.params.id,
+                    req.body,
+                    { new: true }
+                );
+                if (!usuarioActualizado) return res.status(404).json({ error: "Usuario no encontrado" });
+                res.json(usuarioActualizado);
+            } catch (error) {
+                res.status(400).json({ error: error.message });
+            }
+        });
+
+        app.put("/grupos/:id", async (req, res) => {
+            try {
+                const grupoActualizado = await Grupo.findByIdAndUpdate(
+                    req.params.id,
+                    req.body,
+                    { new: true }
+                );
+                if (!grupoActualizado) return res.status(404).json({ error: "Grupo no encontrado" });
+                res.json(grupoActualizado);
+            } catch (error) {
+                res.status(400).json({ error: error.message });
+            }
+        });
+
+        // --- Endpoints DELETE (eliminar) ---
+        app.delete("/usuarios/:id", async (req, res) => {
+            try {
+                const usuarioEliminado = await Usuario.findByIdAndDelete(req.params.id);
+                if (!usuarioEliminado) return res.status(404).json({ error: "Usuario no encontrado" });
+                res.json({ mensaje: "Usuario eliminado correctamente" });
+            } catch (error) {
+                res.status(400).json({ error: error.message });
+            }
+        });
+
+        app.delete("/grupos/:id", async (req, res) => {
+            try {
+                const grupoEliminado = await Grupo.findByIdAndDelete(req.params.id);
+                if (!grupoEliminado) return res.status(404).json({ error: "Grupo no encontrado" });
+                res.json({ mensaje: "Grupo eliminado correctamente" });
+            } catch (error) {
+                res.status(400).json({ error: error.message });
+            }
+        });
+
         const PORT = 3000;
         app.listen(PORT, () => console.log(`Servidor en http://localhost:${PORT}`));
 
@@ -55,6 +121,5 @@ async function iniciarServidor() {
         console.error("Error al conectar a MongoDB:", error);
     }
 }
-
 
 iniciarServidor();
