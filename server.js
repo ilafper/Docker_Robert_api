@@ -16,6 +16,7 @@ async function iniciarServidor() {
         // --- Crear datos de ejemplo ---
         const usuariosExistentes = await Usuario.countDocuments();
         if (usuariosExistentes === 0) {
+            //usuarios de base
             await Usuario.insertMany([
                 { nombre: "Ana", email: "ana@email.com", edad: 25 },
                 { nombre: "Luis", email: "luis@email.com", edad: 30 }
@@ -25,6 +26,7 @@ async function iniciarServidor() {
 
         const gruposExistentes = await Grupo.countDocuments();
         if (gruposExistentes === 0) {
+            //grupos de base
             await Grupo.insertMany([
                 { nombreGrupo: "Grupo A", cantidadAlumnos: 10 },
                 { nombreGrupo: "Grupo B", cantidadAlumnos: 15 }
@@ -43,8 +45,8 @@ async function iniciarServidor() {
             res.json(grupos);
         });
 
-        // --- Endpoints POST (crear) ---
-        app.post("/usuarios", async (req, res) => {
+        // --- Crear usuarios ---
+        app.post("/crearusuario", async (req, res) => {
             try {
                 const nuevoUsuario = new Usuario(req.body);
                 const savedUsuario = await nuevoUsuario.save();
@@ -54,7 +56,7 @@ async function iniciarServidor() {
             }
         });
 
-        app.post("/grupos", async (req, res) => {
+        app.post("/creargrupos", async (req, res) => {
             try {
                 const nuevoGrupo = new Grupo(req.body);
                 const savedGrupo = await nuevoGrupo.save();
@@ -65,7 +67,7 @@ async function iniciarServidor() {
         });
 
         // --- Endpoints PUT (editar) ---
-        app.put("/usuarios/:id", async (req, res) => {
+        app.put("/actuusuarios/:id", async (req, res) => {
             try {
                 const usuarioActualizado = await Usuario.findByIdAndUpdate(
                     req.params.id,
@@ -79,7 +81,7 @@ async function iniciarServidor() {
             }
         });
 
-        app.put("/grupos/:id", async (req, res) => {
+        app.put("/actugrupos/:id", async (req, res) => {
             try {
                 const grupoActualizado = await Grupo.findByIdAndUpdate(
                     req.params.id,
@@ -93,8 +95,8 @@ async function iniciarServidor() {
             }
         });
 
-        // --- Endpoints DELETE (eliminar) ---
-        app.delete("/usuarios/:id", async (req, res) => {
+        // --- endpoint delete ---
+        app.delete("/deleteusuarios/:id", async (req, res) => {
             try {
                 const usuarioEliminado = await Usuario.findByIdAndDelete(req.params.id);
                 if (!usuarioEliminado) return res.status(404).json({ error: "Usuario no encontrado" });
@@ -104,9 +106,10 @@ async function iniciarServidor() {
             }
         });
 
-        app.delete("/grupos/:id", async (req, res) => {
+        app.delete("/deletegrupos/:id", async (req, res) => {
             try {
                 const grupoEliminado = await Grupo.findByIdAndDelete(req.params.id);
+                
                 if (!grupoEliminado) return res.status(404).json({ error: "Grupo no encontrado" });
                 res.json({ mensaje: "Grupo eliminado correctamente" });
             } catch (error) {
