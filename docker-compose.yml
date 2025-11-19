@@ -18,7 +18,7 @@ services:
 
   app:
     image: ejemplo-de-una-api:v1.0.0
-    container_name: servidor_node
+    container_name: miPutaApi
     
     ports:
       - "3000:3000"
