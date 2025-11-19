@@ -1,5 +1,6 @@
 
 services:
+
   mongo:
     image: mongo:7.0
     container_name: mongodb_local
@@ -16,8 +17,7 @@ services:
       - mongo_data:/data/db
 
   app:
-    build: .
-    
+    image: ejemplo-de-una-api:v1.0.0
     container_name: servidor_node
     
     ports:

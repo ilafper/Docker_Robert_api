@@ -7,7 +7,8 @@ const app = express();
 app.use(express.json());
 
 async function iniciarServidor() {
-    const uri = "mongodb://localhost:27017/miBaseDeDatos";
+
+    const uri = process.env.MONGO_URI || "mongodb://host.docker.internal:27017/miBaseDeDatos";
 
     try {
         await mongoose.connect(uri);
