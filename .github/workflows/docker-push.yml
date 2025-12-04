@@ -9,7 +9,7 @@ on:
       - '**' # cualquier cambio en el repositorio
       - '.github/workflows/docker-push.yml'
   workflow_dispatch: # Permite ejecutar manualmente
-
+#rr
 env:
   DOCKER_IMAGE_NAME: ${{ secrets.DOCKER_USERNAME }}/ejemplo-de-una-api
   DOCKER_TAG: latest
