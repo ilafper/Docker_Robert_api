@@ -1,0 +1,624 @@
+\documentclass[12pt,a4paper]{article}
+
+\usepackage[spanish]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage{float}
+\usepackage{hyperref}
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    urlcolor=cyan,
+    pdftitle={Documentación API REST},
+    pdfauthor={Proyecto Node.js + Express + MongoDB},
+    bookmarks=true,
+    pdfpagemode=FullScreen,
+}
+\usepackage{geometry}
+\geometry{margin=2.5cm}
+\usepackage{xcolor}
+\usepackage{graphicx}
+\usepackage{setspace}
+\usepackage{tcolorbox}
+\tcbuselibrary{listings,skins,breakable}
+
+\onehalfspacing 
+
+
+\newtcblisting{codeblock}[2][]{
+    listing only,
+    listing options={language=,breaklines=true,basicstyle=\ttfamily\small},
+    colback=gray!10,
+    colframe=gray!70,
+    boxrule=0.5mm,
+    arc=2mm,
+    breakable,
+    enhanced,
+    #1
+}
+
+% Botón "Volver al índice"
+\newcommand{\volverindice}{\noindent\hyperlink{toc}{\textcolor{blue}{\textbf{Volver al índice}}}\par\vspace{0.5cm}}
+
+\title{Documentación de la API REST en Local}
+\author{Proyecto Node.js + Express + MongoDB}
+\date{}
+
+\begin{document}
+
+\maketitle
+\newpage
+\hypertarget{toc}{}
+\tableofcontents
+\newpage
+
+\section{Introducción}
+\volverindice
+
+Esta documentación describe el funcionamiento de una API REST creada con \textbf{Node.js}, \textbf{Express} y \textbf{MongoDB}, utilizando \textbf{Mongoose}.
+
+La API proporciona operaciones CRUD para dos entidades principales: \textbf{Usuarios} y \textbf{Grupos}.
+
+El servidor se ejecuta en un entorno local.
+
+\section{Tecnologías Utilizadas}
+\volverindice
+
+\begin{itemize}
+    \item Node.js — Entorno de ejecución para JavaScript.
+    \item Express — Framework para crear el servidor HTTP.
+    \item MongoDB — Base de datos NoSQL documental.
+    \item Mongoose — ODM para manejar modelos y esquemas.
+    \item Postman — Herramienta para probar los endpoints.
+\end{itemize}
+
+Instalación realizada:
+
+\begin{codeblock}[language=bash]
+npm init -y
+npm install express mongoose
+\end{codeblock}
+
+\newpage
+
+\section{Estructura del Proyecto}
+\volverindice
+
+\begin{codeblock}[language=]
+nombreProyecto/
+│
+├── models/
+│   ├── usuario.js
+│   └── grupo.js
+├── node_modules/
+├── server.js
+└── package.json
+\end{codeblock}
+
+\section{Modelos de Datos}
+\volverindice
+
+En nuestro proyecto tendremos dos modelos: uno para usuarios y otro para grupos. A continuación se muestra la estructura de cada uno.
+
+\subsection{Modelo Usuario}
+
+Archivo \texttt{usuario.js}:
+
+\begin{codeblock}[language=JavaScript]
+import mongoose from "mongoose";
+
+const usuarioSchema = new mongoose.Schema({
+  nombre: { type: String, required: true },
+  email: { type: String, required: true, unique: true },
+  edad: { type: Number }
+}, {
+  versionKey: false
+});
+
+const Usuario = mongoose.model("Usuario", usuarioSchema);
+
+export default Usuario;
+\end{codeblock}
+
+\textbf{Campos del modelo Usuario:}
+
+\begin{itemize}
+    \item nombre — String (obligatorio)
+    \item email — String, único (obligatorio)
+    \item edad — Number (opcional)
+\end{itemize}
+
+\subsection{Modelo Grupo}
+
+Archivo \texttt{grupo.js}:
+
+\begin{codeblock}[language=JavaScript]
+import mongoose from "mongoose";
+
+const grupoSchema = new mongoose.Schema({
+  nombreGrupo: { type: String, required: true },
+  cantidadAlumnos: { type: Number, required: true }
+}, {
+  versionKey: false
+});
+
+const Grupo = mongoose.model("Grupo", grupoSchema);
+
+export default Grupo;
+\end{codeblock}
+
+\textbf{Campos del modelo Grupo:}
+
+\begin{itemize}
+    \item nombreGrupo — String (obligatorio)
+    \item cantidadAlumnos — Number (obligatorio)
+\end{itemize}
+
+\section{Servidor (server.js)}
+\volverindice
+
+\subsection{Descripción General}
+
+El archivo \texttt{server.js} se encarga de:
+
+\begin{itemize}
+    \item Conectar con MongoDB.
+    \item Insertar datos iniciales si las colecciones están vacías.
+    \item Definir endpoints CRUD para Usuarios y Grupos.
+    \item Iniciar el servidor en \texttt{http://localhost:3000}.
+\end{itemize}
+
+\subsection{Código del Servidor}
+
+\begin{codeblock}[language=JavaScript]
+import express from "express";
+import mongoose from "mongoose";
+import Usuario from "./models/usuario.js";
+import Grupo from "./models/grupo.js";
+
+const app = express();
+app.use(express.json());
+
+async function iniciarServidor() {
+    const uri = process.env.MONGO_URI || "mongodb://localhost:27017/miBaseDeDatos";
+
+    try {
+        await mongoose.connect(uri);
+        console.log("Mongoose conectado a MongoDB local");
+
+        // Crear usuarios iniciales
+        const usuariosExistentes = await Usuario.countDocuments();
+        if (usuariosExistentes === 0) {
+            await Usuario.insertMany([
+                { nombre: "Ana", email: "ana@email.com", edad: 25 },
+                { nombre: "Luis", email: "luis@email.com", edad: 30 }
+            ]);
+            console.log("Usuarios de ejemplo creados");
+        }
+
+        // Crear grupos iniciales
+        const gruposExistentes = await Grupo.countDocuments();
+        if (gruposExistentes === 0) {
+            await Grupo.insertMany([
+                { nombreGrupo: "Grupo A", cantidadAlumnos: 10 },
+                { nombreGrupo: "Grupo B", cantidadAlumnos: 15 }
+            ]);
+            console.log("Grupos de ejemplo creados");
+        }
+
+        // Endpoints Usuarios
+        app.get("/usuarios", async (req, res) => {
+            const usuarios = await Usuario.find();
+            res.json(usuarios);
+        });
+
+        app.post("/crearusuario", async (req, res) => {
+            try {
+                const nuevoUsuario = new Usuario(req.body);
+                const savedUsuario = await nuevoUsuario.save();
+                res.status(201).json(savedUsuario);
+            } catch (error) {
+                res.status(400).json({ error: error.message });
+            }
+        });
+
+        app.put("/usuarios/:id", async (req, res) => {
+            try {
+                const usuarioActualizado = await Usuario.findByIdAndUpdate(
+                    req.params.id,
+                    req.body,
+                    { new: true }
+                );
+                if (!usuarioActualizado) return res.status(404).json({ error: "Usuario no encontrado" });
+                res.json(usuarioActualizado);
+            } catch (error) {
+                res.status(400).json({ error: error.message });
+            }
+        });
+
+        app.delete("/usuarios/:id", async (req, res) => {
+            try {
+                const usuarioEliminado = await Usuario.findByIdAndDelete(req.params.id);
+                if (!usuarioEliminado) return res.status(404).json({ error: "Usuario no encontrado" });
+                res.json({ mensaje: "Usuario eliminado correctamente" });
+            } catch (error) {
+                res.status(400).json({ error: error.message });
+            }
+        });
+
+        // Endpoints Grupos
+        app.get("/grupos", async (req, res) => {
+            const grupos = await Grupo.find();
+            res.json(grupos);
+        });
+
+        app.post("/grupos", async (req, res) => {
+            try {
+                const nuevoGrupo = new Grupo(req.body);
+                const savedGrupo = await nuevoGrupo.save();
+                res.status(201).json(savedGrupo);
+            } catch (error) {
+                res.status(400).json({ error: error.message });
+            }
+        });
+
+        app.put("/grupos/:id", async (req, res) => {
+            try {
+                const grupoActualizado = await Grupo.findByIdAndUpdate(
+                    req.params.id,
+                    req.body,
+                    { new: true }
+                );
+                if (!grupoActualizado) return res.status(404).json({ error: "Grupo no encontrado" });
+                res.json(grupoActualizado);
+            } catch (error) {
+                res.status(400).json({ error: error.message });
+            }
+        });
+
+        app.delete("/grupos/:id", async (req, res) => {
+            try {
+                const grupoEliminado = await Grupo.findByIdAndDelete(req.params.id);
+                if (!grupoEliminado) return res.status(404).json({ error: "Grupo no encontrado" });
+                res.json({ mensaje: "Grupo eliminado correctamente" });
+            } catch (error) {
+                res.status(400).json({ error: error.message });
+            }
+        });
+
+        const PORT = 3000;
+        app.listen(PORT, () => console.log(`Servidor en http://localhost:${PORT}`));
+
+    } catch (error) {
+        console.error("Error al conectar a MongoDB:", error);
+    }
+}
+
+iniciarServidor();
+\end{codeblock}
+
+\newpage
+
+\section{Endpoints de la API}
+\volverindice
+
+\subsection{Usuarios}
+
+\subsubsection*{GET /usuarios}
+\textbf{Descripción:} Obtiene todos los usuarios registrados.
+
+
+
+\subsubsection*{POST /crearusuario}
+\textbf{Descripción:} Crea un nuevo usuario.
+
+\textbf{Recibe:} JSON con los datos del usuario.
+
+
+
+\subsubsection*{PUT /usuarios/:id}
+\textbf{Descripción:} Actualiza un usuario existente.
+
+\textbf{Recibe:} JSON con los campos a actualizar.
+
+\textbf{Parámetro URL:} \texttt{:id} = ID del usuario.
+
+\subsubsection*{DELETE /usuarios/:id}
+\textbf{Descripción:} Elimina un usuario por su ID.
+
+\textbf{Recibe:} Ningún body.
+
+\section{Pruebas con Postman}
+\volverindice
+
+\begin{itemize}
+    \item Seleccionar el método HTTP.
+    \item Introducir la URL, por ejemplo: \texttt{http://localhost:3000/crearusuario}.
+    \item Enviar JSON en Body para POST y PUT.
+\end{itemize}
+
+\newpage
+\subsection{GET de Usuarios}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth]{imagenes/captura1.png}
+    \caption{Visualización de los usuarios.}
+\end{figure}
+
+\subsection{POST de Usuarios}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth]{imagenes/captura2.png}
+    \caption{Creación de un nuevo usuario.}
+\end{figure}
+
+\subsection{DELETE de Usuarios}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\textwidth]{imagenes/captura3.png}
+    \caption{Eliminación de un usuario.}
+\end{figure}
+
+\subsection{UPDATE de Usuarios}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\textwidth]{imagenes/captura4.png}
+    \caption{Actualización de usuario - paso 1.}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\textwidth]{imagenes/captura5.png}
+    \caption{Actualización de usuario - paso 2.}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\textwidth]{imagenes/captura6.png}
+    \caption{Actualización de usuario - paso 3}
+\end{figure}
+
+\newpage
+
+\section{Docker Compose}
+
+\volverindice
+
+En esta sección dockerizaremos nuestra API, que originalmente corría en local, para ejecutarla dentro de un contenedor Docker.
+
+Para ello necesitaremos dos archivos:
+\begin{itemize}
+    \item \texttt{docker-compose.yml}
+    \item \texttt{Dockerfile}
+\end{itemize}
+
+
+Artivo docker.composer.yml
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\textwidth]{imagenes/docker-composer.png}
+    \caption{Esquema general de los servicios en Docker Compose.}
+\end{figure}
+
+\subsection*{Archivo docker-compose.yml}
+
+\begin{codeblock}[language=JavaScript]
+services:
+  # Servicio de base de datos MongoDB
+  mongo:
+    image: mongo:7.0
+    container_name: mongodb_local
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_DATABASE: miBaseDeDatos
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: ejemplo123
+    volumes:
+      - mongo_data:/data/db
+
+  # Servicio de la API Node.js
+  app:
+    build: .  # Construye la imagen usando el Dockerfile
+    container_name: servidor_node
+    ports:
+      - "3000:3000"
+    environment:
+      MONGO_URI: "mongodb://root:ejemplo123@mongo:27017/miBaseDeDatos?authSource=admin"
+    depends_on:
+      - mongo
+
+# Volumen persistente para MongoDB
+volumes:
+  mongo_data:
+\end{codeblock}
+
+\subsection*{Archivo Dockerfile}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\textwidth]{imagenes/DOCKERFILE.png}
+    \caption{Dockerfile para construir la imagen de la API Node.js.}
+\end{figure}
+
+\begin{codeblock}[language=JavaScript]
+FROM node:20
+
+WORKDIR /app
+
+COPY package*.json ./
+
+RUN npm install
+
+COPY . .
+
+# Puerto que expondrá el contenedor
+EXPOSE 3000
+
+# Comando para ejecutar la app
+CMD ["node", "server.js"]
+\end{codeblock}
+
+\subsection*{Levantar los contenedores}
+
+Para levantar los contenedores (MongoDB + API) ejecutamos:
+
+\begin{codeblock}[language=JavaScript]
+docker compose up -d
+\end{codeblock}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\textwidth]{imagenes/captura3Comandocomposer.png}
+    \caption{Terminal ejecutando Docker Compose.}
+\end{figure}
+\newpage
+\section{Creación de la imagen de la API}
+
+Creamos una imagen propia de la API con:
+
+\begin{codeblock}[language=JavaScript]
+docker build -t tuusuarioDocker/nombreDeLaImagen .
+\end{codeblock}
+
+Luego modificamos el archivo \texttt{docker-compose.yml} para usar la imagen creada:
+
+\begin{codeblock}[language=JavaScript]
+    app:
+    image: ejemplo-de-una-api:v1.0.0
+    container_name: miMegaApi
+\end{codeblock}
+
+\subsection{Subir la imagen a Docker Hub}
+
+1. Listar imágenes locales:
+
+\begin{codeblock}[language=JavaScript]
+docker images
+\end{codeblock}
+
+2. Subir la imagen a Docker Hub:
+
+\begin{codeblock}[language=JavaScript]
+docker push miusuario/miapi:1.0
+\end{codeblock}
+
+3. Verificar en Docker Hub → Repositories que la imagen se subió correctamente.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\textwidth]{imagenes/imagenApi.png}
+    \caption{Imagen de la API subida a Docker Hub.}
+\end{figure}
+
+\section{Workflow de GitHub}
+
+\volverindice
+
+\textbf{¿Qué es un Workflow?}  
+
+Un Workflow es un conjunto de acciones automáticas que GitHub ejecuta cuando ocurre un evento en tu repositorio, como un push, pull request o release.  
+
+En nuestro caso, el Workflow construirá y subirá automáticamente la imagen de la API a Docker Hub cada vez que hagamos push, evitando levantar manualmente el contenedor.
+
+\subsection{Creación del Workflow}
+
+Creamos la carpeta dentro del proyecto:
+
+\begin{verbatim}
+.github/workflows/
+\end{verbatim}
+
+y dentro de esa carpeta el archivo:
+
+\begin{verbatim}
+docker-push.yml
+\end{verbatim}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\textwidth]{wordflow/wordflow1.png}
+    \caption{Carpeta y archivo Workflow en el repositorio.}
+\end{figure}
+
+\subsubsection*{Contenido del archivo docker-push.yml}
+
+\begin{codeblock}[language=JavaScript]
+name: Build and Push Docker Image
+
+on:
+  push:
+    branches:
+      - main
+      - master
+    paths: 
+      - '**'
+      - '.github/workflows/docker-push.yml'
+  workflow_dispatch:
+
+env:
+  DOCKER_IMAGE_NAME: ${{ secrets.DOCKER_USERNAME }}/ejemplo-de-una-api
+  DOCKER_TAG: latest
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+
+      - name: Configurar Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login a Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Construir y subir imagen Docker
+        uses: docker/build-push-action@v5
+        with:
+          context: ./
+          file: ./Dockerfile
+          push: true
+          tags: ${{ env.DOCKER_IMAGE_NAME }}:${{ env.DOCKER_TAG }}
+          cache-from: type=registry,ref=${{ env.DOCKER_IMAGE_NAME }}:buildcache
+          cache-to: type=inline
+
+      - name: Mostrar información de la imagen
+        run: |
+          echo "Imagen construida y subida exitosamente:"
+          echo "  - Imagen: ${{ env.DOCKER_IMAGE_NAME }}:${{ env.DOCKER_TAG }}"
+          echo "  - Docker Hub: https://hub.docker.com/r/${{ secrets.DOCKER_USERNAME }}/ejemplo-de-una-api"
+\end{codeblock}
+
+\subsubsection*{Creación del token en Docker Hub}
+
+- Ir a Docker Hub → Settings → Personal → Generate new token  
+- Dar un nombre al token, seleccionar permisos (lectura/escritura/borrado) y duración (puede ser permanente)  
+- Copiar el token (una vez generado no se podrá volver a ver)
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\textwidth]{wordflow/tokenCrear.png}
+    \caption{Token generado en Docker Hub.}
+\end{figure}
+
+- En GitHub → Settings → Secrets and variables → Actions crear:  
+  - \texttt{DOCKER_USERNAME} → usuario Docker Hub  
+  - \texttt{DOCKER_PASSWORD} → token generado  
+
+\subsubsection*{Resultado}
+
+- Hacer push al repositorio ejecuta automáticamente el Workflow  
+- La imagen Docker de la API se construye y se sube a Docker Hub  
+- Ya no es necesario levantar manualmente el contenedor para tener la versión más reciente
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\textwidth]{imagenes/actions.png}
+    \caption{Workflow ejecutado en GitHub Actions.}
+\end{figure}
+
+\end{document}
