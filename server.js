@@ -119,7 +119,7 @@ async function iniciarServidor() {
         });
 
         const PORT = 3000;
-        app.listen(PORT, () => console.log(`Servidor en http://localhost:${PORT}`));
+        app.listen(PORT, () => console.log(`Servidor en http://0.0.0.0:${PORT}`));
 
     } catch (error) {
         console.error("Error al conectar a MongoDB:", error);
