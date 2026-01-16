@@ -19,7 +19,7 @@ async function iniciarServidor() {
         if (usuariosExistentes === 0) {
             //usuarios de base
             await Usuario.insertMany([
-                { nombre: "Ana", email: "ana@email.com", edad: 25 },
+                { nombre: "Ana", email: "ana2@email.com", edad: 25 },
                 { nombre: "Luis", email: "luis@email.com", edad: 30 }
             ]);
             console.log("Usuarios de ejemplo creados");
