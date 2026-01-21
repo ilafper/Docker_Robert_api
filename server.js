@@ -35,6 +35,12 @@ async function iniciarServidor() {
             console.log("Grupos de ejemplo creados");
         }
 
+
+        app.get("/", async (req, res) => {
+            res.json({message:'prueba webhook'});
+        });
+
+
         // --- Endpoints GET ---
         app.get("/usuarios", async (req, res) => {
             const usuarios = await Usuario.find();
