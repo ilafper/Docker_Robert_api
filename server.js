@@ -3,10 +3,10 @@ import mongoose from "mongoose";
 import dotenv from 'dotenv';
 import { serve } from 'inngest/express';
 import { inngest } from './ingest-cliente.js';
-import { enviarMensajeTelegram } from './telegram.js'; // ← AÑADIR ESTO
+import { enviarMensajeTelegram } from './telegram.js';
 import Usuario from "./models/usuario.js";
 import Grupo from "./models/grupo.js";
-
+import { notificarUsuarioCreado } from './noti-usuario.js';
 // Cargar variables de entorno
 dotenv.config();
 
@@ -24,8 +24,8 @@ async function iniciarServidor() {
         const usuariosExistentes = await Usuario.countDocuments();
         if (usuariosExistentes === 0) {
             await Usuario.insertMany([
-                { nombre: "Ana", email: "ana7@email.com", edad: 25 },
-                { nombre: "Luis", email: "luis@email.com", edad: 30 }
+                { nombre: "Ana", apellidos: "García", nota: "usuario1Prueba" },
+                { nombre: "Luis", apellidos: "Martínez", nota: "usuario2Prueba" }
             ]);
             console.log("✅ Usuarios de ejemplo creados");
         }
@@ -39,15 +39,14 @@ async function iniciarServidor() {
             console.log("✅ Grupos de ejemplo creados");
         }
 
-        app.get("/", async (req, res) => {
-            res.json({message:'API Robert funcionando'});
-        });
 
-        // Registrar endpoint de Inngest (si lo usas para algo más)
-        // app.use('/api/inngest', serve({
-        //     client: inngest,
-        //     functions: [], // Vacío por ahora
-        // }));
+        app.use('/api/inngest', serve({
+            client: inngest,
+            functions: [notificarUsuarioCreado],  // ← Registrar la función
+        }));
+        app.get("/", async (req, res) => {
+            res.json({ message: 'API Robert funcionando' });
+        });
 
         // --- Endpoints GET ---
         app.get("/usuarios", async (req, res) => {
@@ -63,52 +62,30 @@ async function iniciarServidor() {
         // --- Crear usuarios  ---
         app.post("/crearusuario", async (req, res) => {
             try {
-                const { nombre,apellidos,edad } = req.body;
-                
-                const nuevoUsuario = new Usuario({
-                    nombre,
-                    apellidos,
-                    edad
+                const nuevoUsuario = new Usuario(req.body);
+                const savedUsuario = await nuevoUsuario.save();
+
+                // Disparar evento para Inngest
+                await inngest.send({
+                    name: 'usuario.creado',
+                    data: {
+                        nombre: savedUsuario.nombre,
+                        apellidos: savedUsuario.apellidos,
+                        nota: savedUsuario.nota,
+                        fecha: new Date().toISOString()
+                    }
                 });
-                
-                
-                // NOTIFICACIÓN A TELEGRAM
-                const totalUsuarios = await Usuario.countDocuments();
-                
-                const mensaje = `USUARIO NUEVO YEY YEY YUPI YUPI \n\n` +
-                               `👤 Nombre: ${nombre || 'No especificado'}\n` +
-                               `� Apellidos: ${apellidos || 'No especificado'}\n` +
-                               `📊 Total usuarios: ${totalUsuarios}\n` +
-                               `🕐 ${new Date().toLocaleTimeString('es-ES')}\n` +
-                               `📅 ${new Date().toLocaleDateString('es-ES')}`;
-                
-                // Enviar en segundo plano (no bloquea la respuesta)
-                enviarMensajeTelegram(mensaje)
-                    .then(() => console.log(`📨 Telegram: Usuario "${nombre}" registrado`))
-                    .catch(error => {
-                        console.log('⚠️  Telegram offline:', error.message);
-                        console.log('   (Usuario igual fue guardado en la base de datos)');
-                    });
-                
+
+                console.log('✅ Evento enviado a Inngest');
+
                 res.status(201).json({
                     success: true,
-                    message: "Usuario creado exitosamente",
                     usuario: savedUsuario,
-                    totalUsuarios,
-                    notificacion: "Enviada a Telegram"
+                    message: "Usuario creado - Notificación en proceso"
                 });
-                
+
             } catch (error) {
-                console.error("❌ Error creando usuario:", error.message);
-                
-                // Notificar error también (opcional)
-                enviarMensajeTelegram(`❌ ERROR: ${error.message}`)
-                    .catch(() => {}); // Ignorar si también falla
-                
-                res.status(400).json({ 
-                    success: false, 
-                    error: error.message 
-                });
+                res.status(400).json({ error: error.message });
             }
         });
 
@@ -165,7 +142,7 @@ async function iniciarServidor() {
         app.delete("/deletegrupos/:id", async (req, res) => {
             try {
                 const grupoEliminado = await Grupo.findByIdAndDelete(req.params.id);
-                
+
                 if (!grupoEliminado) return res.status(404).json({ error: "Grupo no encontrado" });
                 res.json({ mensaje: "Grupo eliminado correctamente" });
             } catch (error) {
@@ -174,7 +151,7 @@ async function iniciarServidor() {
         });
 
         const PORT = 3000;
-        
+
         app.listen(PORT, () => {
             console.log('='.repeat(50));
             console.log(`🚀 Servidor API: http://localhost:${PORT}`);
