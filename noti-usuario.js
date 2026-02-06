@@ -18,6 +18,7 @@ export const notificarUsuarioCreado = inngest.createFunction(
             `⏰ ${new Date().toLocaleTimeString('es-ES')}`;
 
         console.log('📤 Enviando notificación vía Inngest...');
+        
         await enviarMensajeTelegram(mensaje);
 
         return { success: true, usuarioId: event.data.usuarioId, notificado: true };
